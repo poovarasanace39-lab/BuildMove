@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../models/enums.dart';
+import '../routing/app_routes.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
@@ -145,6 +147,19 @@ class DevModeBanner extends ConsumerWidget {
       onTap: () async {
         Navigator.pop(context);
         await ref.read(authProvider.notifier).devSwitchRole(role);
+        if (context.mounted) {
+          switch (role) {
+            case UserRole.customer:
+              context.go(AppRoutes.customerHome);
+              break;
+            case UserRole.driver:
+              context.go(AppRoutes.driverHome);
+              break;
+            case UserRole.admin:
+              context.go(AppRoutes.adminDashboard);
+              break;
+          }
+        }
       },
     );
   }

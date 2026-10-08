@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/theme_provider.dart';
 import '../../../models/enums.dart';
 import '../providers/booking_flow_provider.dart';
 
@@ -41,12 +40,19 @@ class _MaterialQuantityScreenState extends ConsumerState<MaterialQuantityScreen>
     final pickup = state.pickupLocation?.address ?? 'Dalmia Cement Depot, Ambattur';
     final drop = state.dropLocation?.address ?? 'Sri Sai Site, OMR Thoraipakkam';
 
-    final int bagsCount = (state.quantityTons * 20).round();
     final String suggestedTruck = state.quantityTons <= 2.0
         ? 'Bolero Maxi / Ace Mega (2T)'
         : state.quantityTons <= 10.0
-            ? '6-Wheeler Medium Tipper (6T)'
+            ? '6-Wheeler Tipper (10T)'
             : '10-Wheeler Heavy Dumper (20T)';
+
+    final String quantityDesc = state.selectedMaterial == ConstructionMaterial.cement
+        ? (currentLang == 'TA'
+            ? 'தோராயமாக ${(state.quantityTons * 20).round()} மூட்டைகள் (50kg) • $suggestedTruck'
+            : 'Approx. ${(state.quantityTons * 20).round()} bags (50kg) • $suggestedTruck')
+        : (currentLang == 'TA'
+            ? '${state.quantityTons.toStringAsFixed(1)} டன் சுமை • $suggestedTruck'
+            : '${state.quantityTons.toStringAsFixed(1)} Tons payload • $suggestedTruck');
 
     final materialItems = [
       _MaterialCardData(
@@ -65,35 +71,35 @@ class _MaterialQuantityScreenState extends ConsumerState<MaterialQuantityScreen>
       ),
       _MaterialCardData(
         material: ConstructionMaterial.steel,
-        titleEn: 'TMT Steel 550D',
+        titleEn: 'TMT Steel',
         titleTa: 'கம்பிகள்',
         desc: 'Bundles & Rods',
         icon: Icons.view_column_outlined,
       ),
       _MaterialCardData(
         material: ConstructionMaterial.bricks,
-        titleEn: 'Fly Ash Bricks',
+        titleEn: 'Bricks',
         titleTa: 'செங்கல்',
-        desc: 'Stacked Pavers',
+        desc: 'Red / Fly Ash Bricks',
         icon: Icons.grid_view_outlined,
       ),
       _MaterialCardData(
         material: ConstructionMaterial.aggregates,
-        titleEn: '20mm Aggregates',
+        titleEn: 'Blue Metal',
         titleTa: 'ஜல்லி',
-        desc: 'Coarse Blue Metal',
+        desc: 'Coarse Aggregates',
         icon: Icons.grain_outlined,
       ),
       _MaterialCardData(
         material: ConstructionMaterial.debris,
-        titleEn: 'Debris Removal',
+        titleEn: 'Site Debris',
         titleTa: 'கட்டுமான கழிவு',
         desc: 'Site Disposal',
         icon: Icons.delete_sweep_outlined,
       ),
       _MaterialCardData(
         material: ConstructionMaterial.tiles,
-        titleEn: 'Ceramic Tiles',
+        titleEn: 'Tiles & Granite',
         titleTa: 'டைல்ஸ்',
         desc: 'Palletized Boxes',
         icon: Icons.layers_outlined,
@@ -101,7 +107,7 @@ class _MaterialQuantityScreenState extends ConsumerState<MaterialQuantityScreen>
       _MaterialCardData(
         material: ConstructionMaterial.timber,
         titleEn: 'Timber & Plywood',
-        titleTa: 'மரம்',
+        titleTa: 'மரம் & பிளைவுட்',
         desc: 'Scaffolding & Boards',
         icon: Icons.forest_outlined,
       ),
@@ -127,61 +133,6 @@ class _MaterialQuantityScreenState extends ConsumerState<MaterialQuantityScreen>
             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
           ),
         ),
-        actions: [
-          // Theme Toggle
-          IconButton(
-            icon: Icon(
-              isDark ? Icons.nightlight_round : Icons.wb_sunny_rounded,
-              size: 18,
-              color: isDark ? Colors.amber : AppColors.secondary,
-            ),
-            onPressed: () => ref.read(themeModeProvider.notifier).toggleTheme(context),
-          ),
-          // Language Capsule
-          InkWell(
-            onTap: () {
-              final currentCode = ref.read(appLocaleProvider).languageCode;
-              ref.read(appLocaleProvider.notifier).setLocale(currentCode == 'en' ? 'ta' : 'en');
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurfaceVariant : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    currentLang,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 3),
-                  Icon(
-                    Icons.signal_cellular_alt_rounded,
-                    size: 11,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Padding(
-            padding: const EdgeInsets.only(right: 14.0),
-            child: CircleAvatar(
-              radius: 15,
-              backgroundColor: AppColors.primaryContainer,
-              child: const Icon(Icons.person, size: 18, color: AppColors.primary),
-            ),
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -534,7 +485,7 @@ class _MaterialQuantityScreenState extends ConsumerState<MaterialQuantityScreen>
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          'Approx. $bagsCount bags • $suggestedTruck',
+                          quantityDesc,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
@@ -720,7 +671,9 @@ class _MaterialQuantityScreenState extends ConsumerState<MaterialQuantityScreen>
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Payload fit: ${state.quantityTons} Tons • $bagsCount Bags',
+                                state.selectedMaterial == ConstructionMaterial.cement
+                                    ? 'Payload fit: ${state.quantityTons} Tons • ${(state.quantityTons * 20).round()} Bags'
+                                    : 'Payload fit: ${state.quantityTons} Tons (Metric)',
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 10.5,

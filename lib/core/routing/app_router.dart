@@ -18,10 +18,24 @@ import '../../features/tracking/screens/live_tracking_screen.dart';
 import '../../models/enums.dart';
 import 'app_routes.dart';
 
+class RouterNotifier extends ChangeNotifier {
+  final Ref _ref;
+  RouterNotifier(this._ref) {
+    _ref.listen<AuthState>(authProvider, (_, __) => notifyListeners());
+  }
+}
+
+final routerNotifierProvider = Provider<RouterNotifier>((ref) {
+  return RouterNotifier(ref);
+});
+
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final routerNotifier = ref.watch(routerNotifierProvider);
+
   return GoRouter(
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
+    refreshListenable: routerNotifier,
     routes: [
       GoRoute(
         path: AppRoutes.splash,
@@ -77,7 +91,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.customerLiveTracking,
         builder: (context, state) {
-          final id = state.pathParameters['id'] ?? 'BM-2026-081';
+          final id = state.pathParameters['id'] ?? 'BM-8492';
           return LiveTrackingScreen(bookingId: id);
         },
       ),
@@ -108,16 +122,33 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return AppRoutes.login;
       }
 
-      // If authenticated and tries to hit login/splash, redirect to role home
-      if (authState.isAuthenticated && (loc == AppRoutes.login || loc == AppRoutes.splash)) {
+      // If authenticated, enforce proper role routes
+      if (authState.isAuthenticated) {
         final role = authState.currentUser?.role ?? UserRole.customer;
-        switch (role) {
-          case UserRole.customer:
-            return AppRoutes.customerHome;
-          case UserRole.driver:
-            return AppRoutes.driverHome;
-          case UserRole.admin:
-            return AppRoutes.adminDashboard;
+
+        // Redirect from login/splash to respective role home
+        if (loc == AppRoutes.login || loc == AppRoutes.splash) {
+          switch (role) {
+            case UserRole.customer:
+              return AppRoutes.customerHome;
+            case UserRole.driver:
+              return AppRoutes.driverHome;
+            case UserRole.admin:
+              return AppRoutes.adminDashboard;
+          }
+        }
+
+        // Strict role isolation: users cannot access routes of another role
+        final isCustomerRoute = loc.startsWith('/customer');
+        final isDriverRoute = loc.startsWith('/driver');
+        final isAdminRoute = loc.startsWith('/admin');
+
+        if (role == UserRole.customer && (isDriverRoute || isAdminRoute)) {
+          return AppRoutes.customerHome;
+        } else if (role == UserRole.driver && (isCustomerRoute || isAdminRoute)) {
+          return AppRoutes.driverHome;
+        } else if (role == UserRole.admin && (isCustomerRoute || isDriverRoute)) {
+          return AppRoutes.adminDashboard;
         }
       }
 

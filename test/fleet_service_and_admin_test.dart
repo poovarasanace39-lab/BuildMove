@@ -175,7 +175,7 @@ void main() {
 
       // Verify driver association and vehicle model
       expect(find.textContaining('Murugan K.'), findsOneWidget);
-      expect(find.textContaining('Tata Ace'), findsWidgets);
+      expect(find.textContaining('6-Wheeler Tipper'), findsWidgets);
 
       // Verify operational status
       expect(find.text('Available Online'), findsWidgets);

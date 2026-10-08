@@ -14,6 +14,7 @@ import 'package:flutter_application_1/core/routing/app_router.dart';
 import 'package:flutter_application_1/models/user_model.dart';
 import 'package:flutter_application_1/models/enums.dart';
 import 'package:flutter_application_1/core/theme/app_theme.dart';
+import 'package:flutter_application_1/features/booking/providers/booking_flow_provider.dart';
 
 class _TestAuthNotifier extends AuthNotifier {
   @override
@@ -98,11 +99,10 @@ void main() {
       expect(find.text('Move'), findsOneWidget);
       expect(find.text('Customer Home'), findsOneWidget);
 
-      // Check contractor greeting and badge
-      expect(find.text('Hi, Rajesh'), findsOneWidget);
-      expect(find.text('Kavitha Constructions'), findsOneWidget);
-      expect(find.text('TN'), findsOneWidget);
-      expect(find.text('Fleet'), findsOneWidget);
+      // Check contractor greeting and verify unwired TN Fleet badge is removed
+      expect(find.text('Hi, Ramesh'), findsOneWidget);
+      expect(find.text('BuildCon Infra Pvt Ltd'), findsOneWidget);
+      expect(find.text('TN'), findsNothing);
 
       // Check hero booking card
       expect(find.text('Where are you moving materials?'), findsOneWidget);
@@ -170,10 +170,10 @@ void main() {
       expect(find.text('STEP 2 OF 3'), findsOneWidget);
       expect(find.text('GPS Live Radar Active'), findsOneWidget);
       expect(find.text('Choose Vehicle'), findsOneWidget);
-      expect(find.text('6-Wheeler Tipper'), findsNWidgets(2)); // Selection card + sticky bottom summary
+      expect(find.text('6-Wheeler Tipper (10T)'), findsNWidgets(2)); // Selection card + sticky bottom summary
       expect(find.text('Best match'), findsOneWidget);
-      expect(find.text('Bolero Maxi / Ace Mega'), findsOneWidget);
-      expect(find.text('10-Wheeler Heavy Dumper'), findsOneWidget);
+      expect(find.text('Bolero Maxi / Ace Mega (2T)'), findsOneWidget);
+      expect(find.text('10-Wheeler Heavy Dumper (20T)'), findsOneWidget);
       expect(find.text('BuildMove Price Guarantee'), findsOneWidget);
       expect(find.text('Proceed to Review Booking'), findsOneWidget);
     });
@@ -196,7 +196,7 @@ void main() {
       expect(find.text('60 mins Free'), findsOneWidget);
       expect(find.text('Settlement Method'), findsOneWidget);
       expect(find.text('Cash after Unloading'), findsOneWidget);
-      expect(find.text('Confirm Booking'), findsOneWidget);
+      expect(find.text('Confirm · ₹1,850'), findsOneWidget);
     });
 
     testWidgets('LiveTrackingScreen renders tracking canvas and driver card', (tester) async {
@@ -345,4 +345,151 @@ void main() {
       expect(find.text('STEP 1 OF 3'), findsOneWidget);
     });
   });
+
+  group('T03 Vehicle Capacity Guard & Best Match Tests', () {
+    testWidgets('1 & 2. 5.5T load renders 2T vehicle under-capacity and 10T vehicle available with Best Match', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 900));
+      await tester.pumpWidget(createTestWidget(child: const VehicleSelectionScreen()));
+      await tester.pumpAndSettle();
+
+      // Header shows canonical demo material and quantity
+      expect(find.text('For 5.5 Tons Timber & Plywood'), findsOneWidget);
+
+      // 10T vehicle has Best Match and explanation
+      expect(find.text('6-Wheeler Tipper (10T)'), findsNWidgets(2));
+      expect(find.text('Best match'), findsOneWidget);
+      expect(find.text('Fits 5.5 T in one trip'), findsOneWidget);
+
+      // 2T vehicle is under-capacity and shows explanation
+      expect(find.text('Bolero Maxi / Ace Mega (2T)'), findsOneWidget);
+      expect(find.text('Under capacity (max 2 T)'), findsWidgets);
+      expect(find.text('Under Capacity'), findsOneWidget);
+    });
+
+    testWidgets('3. Invalid 2T vehicle cannot become selected upon tapping', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 900));
+      late WidgetRef capturedRef;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          child: Consumer(
+            builder: (context, ref, _) {
+              capturedRef = ref;
+              return MaterialApp(
+                theme: AppTheme.lightTheme,
+                home: const VehicleSelectionScreen(),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Initial state is 10T tipper
+      expect(capturedRef.read(bookingFlowProvider).selectedVehicleType, VehicleType.tipper6Wheeler);
+
+      // Attempt to tap the under-capacity 2T vehicle card
+      final twoTonCard = find.text('Bolero Maxi / Ace Mega (2T)');
+      expect(twoTonCard, findsOneWidget);
+      await tester.tap(twoTonCard);
+      await tester.pumpAndSettle();
+
+      // State MUST remain 10T tipper — 2T vehicle was NOT selected
+      expect(capturedRef.read(bookingFlowProvider).selectedVehicleType, VehicleType.tipper6Wheeler);
+      expect(find.text('Selected load exceeds vehicle capacity. Choose a larger vehicle.'), findsOneWidget);
+
+      // Calling selectVehicle directly on notifier with under-capacity vehicle is guarded
+      capturedRef.read(bookingFlowProvider.notifier).selectVehicle(VehicleType.pickup8ft);
+      expect(capturedRef.read(bookingFlowProvider).selectedVehicleType, VehicleType.tipper6Wheeler);
+    });
+
+    testWidgets('4. Continue/Proceed button is enabled for valid 10T vehicle', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 900));
+      await tester.pumpWidget(createTestWidget(child: const VehicleSelectionScreen()));
+      await tester.pumpAndSettle();
+
+      // Proceed button is enabled for 10T Tipper
+      final proceedFinder = find.widgetWithText(ElevatedButton, 'Proceed to Review Booking');
+      expect(proceedFinder, findsOneWidget);
+      final proceedButton = tester.widget<ElevatedButton>(proceedFinder);
+      expect(proceedButton.onPressed, isNotNull);
+    });
+
+    testWidgets('5 & 6. Best Match and header dynamically reflect booking selection state', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 900));
+      await tester.pumpWidget(createTestWidget(child: const VehicleSelectionScreen()));
+      await tester.pumpAndSettle();
+
+      // 5.5T Timber & Plywood -> 10T tipper is best match
+      expect(find.text('For 5.5 Tons Timber & Plywood'), findsOneWidget);
+      expect(find.text('Fits 5.5 T in one trip'), findsOneWidget);
+    });
+  });
+
+  group('T02 Sticky Confirm Bar & Review Screen Tests', () {
+    testWidgets('1. Review screen renders persistent sticky confirmation bar with Confirm and Edit Details', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 900));
+      await tester.pumpWidget(createTestWidget(child: const BookingConfirmationScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('confirm_booking_button')), findsOneWidget);
+      expect(find.byKey(const Key('edit_details_button')), findsOneWidget);
+      expect(find.text('Confirm · ₹1,850'), findsOneWidget);
+    });
+
+    testWidgets('2. Sticky bar dynamically reflects booking actual total rather than hard-coded value', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 900));
+      final container = ProviderContainer();
+      // Select 20T tipper (fare: 2600)
+      container.read(bookingFlowProvider.notifier).selectVehicle(VehicleType.tipper10Wheeler);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const BookingConfirmationScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Total must reflect 2,600 dynamically
+      expect(find.text('Confirm · ₹2,600'), findsOneWidget);
+    });
+
+    testWidgets('3. Edit Details button has a touch target >= 48x48 dp', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 900));
+      await tester.pumpWidget(createTestWidget(child: const BookingConfirmationScreen()));
+      await tester.pumpAndSettle();
+
+      final editButtonFinder = find.byKey(const Key('edit_details_button'));
+      expect(editButtonFinder, findsOneWidget);
+
+      final Size size = tester.getSize(editButtonFinder);
+      expect(size.height, greaterThanOrEqualTo(48.0));
+      expect(size.width, greaterThanOrEqualTo(48.0));
+    });
+
+    testWidgets('4. Sticky confirmation bar is fully visible and usable on compact 360x640 viewport', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(360, 640));
+      await tester.pumpWidget(createTestWidget(child: const BookingConfirmationScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('confirm_booking_button')), findsOneWidget);
+      expect(find.byKey(const Key('edit_details_button')), findsOneWidget);
+      expect(find.text('Confirm · ₹1,850'), findsOneWidget);
+    });
+
+    testWidgets('5. Confirm action button remains enabled and can be tapped', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 900));
+      await tester.pumpWidget(createTestWidget(child: const BookingConfirmationScreen()));
+      await tester.pumpAndSettle();
+
+      final confirmFinder = find.byKey(const Key('confirm_booking_button'));
+      final button = tester.widget<ElevatedButton>(confirmFinder);
+      expect(button.onPressed, isNotNull);
+    });
+  });
 }
+

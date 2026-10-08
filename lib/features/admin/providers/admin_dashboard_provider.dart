@@ -82,8 +82,10 @@ final adminDashboardMetricsProvider = Provider<AdminDashboardMetrics>((ref) {
   // Vehicles currently online & available
   final int onlineAvailableCount = fleetState.vehicles.where((v) {
     if (!v.isAvailable) return false;
+    final hasPendingOrRejected = v.documents.any((d) => d.status != DocumentStatus.approved);
+    if (hasPendingOrRejected) return false;
     final driver = fleetState.getDriverProfile(v.driverId);
-    return driver?.isOnline ?? false;
+    return (driver?.isOnline ?? false) && (driver?.isApproved ?? false);
   }).length;
 
   // Pending Verifications Queue

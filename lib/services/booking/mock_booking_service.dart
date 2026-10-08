@@ -3,6 +3,7 @@ import '../../core/network/api_result.dart';
 import '../../models/booking_model.dart';
 import '../../models/enums.dart';
 import '../../models/location_model.dart';
+import '../demo/demo_data_service.dart';
 import 'booking_service_interface.dart';
 
 class MockBookingService implements IBookingService {
@@ -22,169 +23,31 @@ class MockBookingService implements IBookingService {
     _seeded = false;
   }
 
+  /// Sets bookings to empty or populated for deterministic test states
+  static void setBookingsEmpty(bool empty) {
+    _bookings.clear();
+    if (!empty) {
+      _bookings.addAll(DemoDataService.createInitialBookings());
+    }
+    _seeded = true;
+  }
+
+  /// Sets status of a specific booking for testing state transitions
+  static void setBookingStatus(String bookingId, BookingStatus status) {
+    final index = _bookings.indexWhere((b) => b.id == bookingId);
+    if (index != -1) {
+      _bookings[index] = _bookings[index].copyWith(status: status);
+    }
+  }
+
+  /// Read-only snapshot of current bookings
+  static List<BookingModel> get currentBookings => List.unmodifiable(_bookings);
+
   void _initializeSeedData() {
-    _bookings.addAll([
-      BookingModel(
-        id: 'BM-8492',
-        customerId: 'usr_cust_001',
-        customerName: 'Rajesh',
-        customerPhone: '+91 9876543210',
-        driverId: 'usr_drv_002',
-        driverName: 'Murugan K.',
-        driverPhone: '+91 9840123456',
-        vehicleType: VehicleType.tipper6Wheeler,
-        materialType: ConstructionMaterial.cement,
-        quantityTons: 5.0,
-        pickupLocation: const LocationModel(
-          latitude: 13.0827,
-          longitude: 80.2707,
-          address: 'Dalmia Cement Depot, Ambattur',
-          siteLandmark: 'Opposite Gate 3 Wholesale Depot',
-          city: 'Chennai',
-          pincode: '600058',
-        ),
-        dropLocation: const LocationModel(
-          latitude: 12.9716,
-          longitude: 80.2435,
-          address: 'Construction Site, OMR Thoraipakkam',
-          siteLandmark: 'Site Phase 2, OMR Navalur',
-          city: 'Chennai',
-          pincode: '600097',
-        ),
-        status: BookingStatus.accepted,
-        estimatedFare: 1850.0,
-        actualFare: 1850.0,
-        distanceKm: 14.5,
-        scheduledAt: DateTime.now().subtract(const Duration(minutes: 20)),
-        createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
-        otpForPickup: '4821',
-      ),
-      BookingModel(
-        id: 'BM-2026-079',
-        customerId: 'usr_cust_001',
-        customerName: 'Ramesh Sundaram',
-        customerPhone: '+91 9876543210',
-        driverId: 'usr_drv_002',
-        driverName: 'Murugan K.',
-        driverPhone: '+91 9840123456',
-        vehicleType: VehicleType.pickup8ft,
-        materialType: ConstructionMaterial.sand,
-        quantityTons: 1.5,
-        pickupLocation: const LocationModel(
-          latitude: 13.0405,
-          longitude: 80.2337,
-          address: 'Sri Ramana M-Sand Yard, Poonamallee High Rd',
-          city: 'Chennai',
-          pincode: '600056',
-        ),
-        dropLocation: const LocationModel(
-          latitude: 13.0827,
-          longitude: 80.2707,
-          address: 'Commercial Tower Site, Anna Nagar West',
-          city: 'Chennai',
-          pincode: '600040',
-        ),
-        status: BookingStatus.completed,
-        estimatedFare: 1100.0,
-        actualFare: 1100.0,
-        distanceKm: 18.5,
-        scheduledAt: DateTime.now().subtract(const Duration(days: 1, hours: 3)),
-        createdAt: DateTime.now().subtract(const Duration(days: 1, hours: 5)),
-        otpForPickup: '1903',
-      ),
-      BookingModel(
-        id: 'BM-2026-083',
-        customerId: 'usr_cust_001',
-        customerName: 'Ramesh Sundaram',
-        customerPhone: '+91 9876543210',
-        driverId: null,
-        vehicleType: VehicleType.pickup8ft,
-        materialType: ConstructionMaterial.steel,
-        quantityTons: 1.2,
-        pickupLocation: const LocationModel(
-          latitude: 13.0102,
-          longitude: 80.2156,
-          address: 'JSW Steel Stockyard, Guindy Industrial Estate',
-          city: 'Chennai',
-          pincode: '600032',
-        ),
-        dropLocation: const LocationModel(
-          latitude: 12.9249,
-          longitude: 80.1000,
-          address: 'Residential Complex, Tambaram West',
-          city: 'Chennai',
-          pincode: '600045',
-        ),
-        status: BookingStatus.searching,
-        estimatedFare: 980.0,
-        distanceKm: 16.0,
-        scheduledAt: DateTime.now().add(const Duration(hours: 2)),
-        createdAt: DateTime.now().subtract(const Duration(minutes: 15)),
-        otpForPickup: '8392',
-      ),
-      BookingModel(
-        id: 'BM-2026-085',
-        customerId: 'usr_cust_001',
-        customerName: 'Rajesh',
-        customerPhone: '+91 9876543210',
-        driverId: null,
-        vehicleType: VehicleType.tataAce,
-        materialType: ConstructionMaterial.bricks,
-        quantityTons: 3.0,
-        pickupLocation: const LocationModel(
-          latitude: 13.1991,
-          longitude: 80.1963,
-          address: 'Red Bricks Kiln Yard, Red Hills',
-          city: 'Chennai',
-          pincode: '600052',
-        ),
-        dropLocation: const LocationModel(
-          latitude: 12.8996,
-          longitude: 80.2458,
-          address: 'Villa Site #42, ECR Akkarai',
-          city: 'Chennai',
-          pincode: '600119',
-        ),
-        status: BookingStatus.pending,
-        estimatedFare: 1450.0,
-        distanceKm: 28.0,
-        scheduledAt: DateTime.now().add(const Duration(hours: 4)),
-        createdAt: DateTime.now().subtract(const Duration(minutes: 10)),
-        otpForPickup: '6219',
-      ),
-      BookingModel(
-        id: 'BM-2026-071',
-        customerId: 'usr_cust_001',
-        customerName: 'Rajesh',
-        customerPhone: '+91 9876543210',
-        driverId: 'usr_drv_005',
-        driverName: 'Senthil Nathan',
-        driverPhone: '+91 9840998877',
-        vehicleType: VehicleType.tipper6Wheeler,
-        materialType: ConstructionMaterial.aggregates,
-        quantityTons: 8.0,
-        pickupLocation: const LocationModel(
-          latitude: 12.8912,
-          longitude: 80.0812,
-          address: 'Blue Metal Quarry, Vandalur',
-          city: 'Chennai',
-          pincode: '600048',
-        ),
-        dropLocation: const LocationModel(
-          latitude: 13.0067,
-          longitude: 80.2024,
-          address: 'Metro Rail Pier 118, Guindy',
-          city: 'Chennai',
-          pincode: '600032',
-        ),
-        status: BookingStatus.cancelled,
-        estimatedFare: 3200.0,
-        actualFare: 0.0,
-        distanceKm: 22.0,
-        scheduledAt: DateTime.now().subtract(const Duration(days: 2)),
-        createdAt: DateTime.now().subtract(const Duration(days: 2, hours: 1)),
-      ),
-    ]);
+    if (DemoDataService.instance.isBookingsEmpty) {
+      return;
+    }
+    _bookings.addAll(DemoDataService.createInitialBookings());
   }
 
   @override
@@ -233,10 +96,17 @@ class MockBookingService implements IBookingService {
   }) async {
     await Future.delayed(const Duration(milliseconds: 800));
 
+    // Strict Capacity Validation: A vehicle cannot be assigned to an overweight load
+    if (vehicleType.capacityTons < quantityTons) {
+      return Failure(ValidationFailure(
+        'Selected vehicle (${vehicleType.name}) has capacity ${vehicleType.capacityTons}T which cannot carry $quantityTons tons.',
+      ));
+    }
+
     final newBooking = BookingModel(
       id: 'BM-8492',
       customerId: 'usr_cust_001',
-      customerName: 'Rajesh',
+      customerName: 'Ramesh Sundaram',
       customerPhone: '+91 9876543210',
       driverId: 'usr_drv_002',
       driverName: 'Murugan K.',

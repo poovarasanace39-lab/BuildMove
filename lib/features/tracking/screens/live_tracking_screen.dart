@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/theme_provider.dart';
 import '../../../core/widgets/contact_action_helper.dart';
 import '../../booking/providers/booking_flow_provider.dart';
 
@@ -45,10 +44,9 @@ class _LiveTrackingScreenState extends ConsumerState<LiveTrackingScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currentLang = ref.watch(appLocaleProvider).languageCode.toUpperCase();
+    final langCode = ref.watch(appLocaleProvider).languageCode;
     final bookingFlowState = ref.watch(bookingFlowProvider);
-
-    final materialName = bookingFlowState.selectedMaterial.name.split(" ").first;
+    final materialName = bookingFlowState.selectedMaterial.localizedName(langCode);
     final quantityTons = bookingFlowState.quantityTons;
 
     return Scaffold(
@@ -88,61 +86,6 @@ class _LiveTrackingScreenState extends ConsumerState<LiveTrackingScreen>
             ),
           ],
         ),
-        actions: [
-          // Theme Toggle
-          IconButton(
-            icon: Icon(
-              isDark ? Icons.nightlight_round : Icons.wb_sunny_rounded,
-              size: 18,
-              color: isDark ? Colors.amber : AppColors.secondary,
-            ),
-            onPressed: () => ref.read(themeModeProvider.notifier).toggleTheme(context),
-          ),
-          // Language Capsule
-          InkWell(
-            onTap: () {
-              final currentCode = ref.read(appLocaleProvider).languageCode;
-              ref.read(appLocaleProvider.notifier).setLocale(currentCode == 'en' ? 'ta' : 'en');
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurfaceVariant : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    currentLang,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 3),
-                  Icon(
-                    Icons.signal_cellular_alt_rounded,
-                    size: 11,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Padding(
-            padding: const EdgeInsets.only(right: 14.0),
-            child: CircleAvatar(
-              radius: 15,
-              backgroundColor: AppColors.primaryContainer,
-              child: const Icon(Icons.person, size: 18, color: AppColors.primary),
-            ),
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -368,7 +311,7 @@ class _LiveTrackingScreenState extends ConsumerState<LiveTrackingScreen>
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '6-Wheeler Tipper   TN 09 BK 4821',
+                                '6-Wheeler Tipper (10T)   TN-02-AL-8921',
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 11,

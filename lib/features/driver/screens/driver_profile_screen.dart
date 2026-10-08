@@ -17,6 +17,7 @@ class DriverProfileScreen extends ConsumerWidget {
     final authState = ref.watch(authProvider);
     final user = authState.currentUser;
     final locale = ref.watch(appLocaleProvider);
+    final isTamil = locale.languageCode == 'ta';
 
     return Scaffold(
       appBar: AppBar(
@@ -56,9 +57,9 @@ class DriverProfileScreen extends ConsumerWidget {
                             color: AppColors.primaryContainer,
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
-                            'Verified Partner Driver',
-                            style: TextStyle(
+                          child: Text(
+                            isTamil ? 'சரிபார்க்கப்பட்ட கூட்டாளர் ஓட்டுநர்' : 'Verified Partner Driver',
+                            style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                               color: AppColors.driverRole,
@@ -90,39 +91,39 @@ class DriverProfileScreen extends ConsumerWidget {
                           color: AppColors.successLight,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text(
-                          'RC ACTIVE',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.success),
+                        child: Text(
+                          isTamil ? 'ஆர்சி செயலில் உள்ளது' : 'RC ACTIVE',
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.success),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  _vehicleField('Vehicle Model', 'Tata Ace (Chota Hathi)'),
-                  _vehicleField('Plate Number', 'TN-02-AL-8921'),
-                  _vehicleField('Rated Capacity', '0.8 Tons (800 Kg)'),
-                  _vehicleField('Permit Type', 'Tamil Nadu Goods Carrier Commercial'),
+                  _vehicleField(isTamil ? 'வாகன மாடல்' : 'Vehicle Model', '6-Wheeler Tipper (10T)'),
+                  _vehicleField(isTamil ? 'வண்டி எண்' : 'Plate Number', 'TN-02-AL-8921'),
+                  _vehicleField(isTamil ? 'சுமை திறன்' : 'Rated Capacity', isTamil ? '10.0 டன் (10,000 கிலோ)' : '10.0 Tons (10,000 Kg)'),
+                  _vehicleField(isTamil ? 'அனுமதி வகை' : 'Permit Type', isTamil ? 'தமிழ்நாடு சரக்கு போக்குவரத்து அனுமதி' : 'Tamil Nadu Goods Carrier Commercial'),
                 ],
               ),
             ),
 
             const SizedBox(height: 16),
 
-            // KYC Documents Upload Status (Cloudinary abstraction)
+            // KYC Documents Upload Status
             AppCard(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Required Documents Status', style: AppTypography.titleSmall),
+                  Text(isTamil ? 'தேவையான ஆவணங்களின் நிலை' : 'Required Documents Status', style: AppTypography.titleSmall),
                   const SizedBox(height: 8),
-                  _documentRow('Driving License (Commercial)', 'Approved', AppColors.success),
+                  _documentRow(isTamil ? 'ஓட்டுநர் உரிமம் (வணிகம்)' : 'Driving License (Commercial)', isTamil ? 'ஒப்புதல் அளிக்கப்பட்டது' : 'Approved', AppColors.success),
                   const Divider(height: 16),
-                  _documentRow('RC Certificate', 'Approved', AppColors.success),
+                  _documentRow(isTamil ? 'பதிவுச் சான்றிதழ் (RC)' : 'RC Certificate', isTamil ? 'ஒப்புதல் அளிக்கப்பட்டது' : 'Approved', AppColors.success),
                   const Divider(height: 16),
-                  _documentRow('Vehicle Commercial Insurance', 'Approved', AppColors.success),
+                  _documentRow(isTamil ? 'வணிக வாகனக் காப்பீடு' : 'Vehicle Commercial Insurance', isTamil ? 'ஒப்புதல் அளிக்கப்பட்டது' : 'Approved', AppColors.success),
                   const Divider(height: 16),
-                  _documentRow('Pollution Under Control (PUC)', 'Expiring in 30 days', AppColors.warning),
+                  _documentRow(isTamil ? 'புகை பரிசோதனை சான்றிதழ் (PUC)' : 'Pollution Under Control (PUC)', isTamil ? '30 நாட்களில் காலாவதியாகிறது' : 'Expiring in 30 days', AppColors.warning),
                 ],
               ),
             ),
@@ -144,7 +145,7 @@ class DriverProfileScreen extends ConsumerWidget {
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.account_balance_wallet_outlined, color: AppColors.secondary),
-                    title: const Text('Bank Account & Payouts'),
+                    title: Text(isTamil ? 'வங்கி கணக்கு & பணம் செலுத்துதல்' : 'Bank Account & Payouts'),
                     subtitle: const Text('State Bank of India •••• 4092'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {},

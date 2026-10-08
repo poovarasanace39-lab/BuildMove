@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/theme_provider.dart';
 import '../../../models/enums.dart';
 import '../providers/booking_flow_provider.dart';
 
@@ -22,8 +21,8 @@ class _VehicleSelectionScreenState extends ConsumerState<VehicleSelectionScreen>
   static const List<_VehicleDisplayData> _vehicles = [
     _VehicleDisplayData(
       type: VehicleType.tipper6Wheeler,
-      title: '6-Wheeler Tipper',
-      isBestMatch: true,
+      title: '6-Wheeler Tipper (10T)',
+      capacityTons: 10.0,
       fare: 1850,
       capacity: '10 Tons',
       distance: '2.4 km',
@@ -33,8 +32,8 @@ class _VehicleSelectionScreenState extends ConsumerState<VehicleSelectionScreen>
     ),
     _VehicleDisplayData(
       type: VehicleType.pickup8ft,
-      title: 'Bolero Maxi / Ace Mega',
-      isBestMatch: false,
+      title: 'Bolero Maxi / Ace Mega (2T)',
+      capacityTons: 2.0,
       fare: 850,
       capacity: '2 Tons',
       distance: '1.8 km',
@@ -44,8 +43,8 @@ class _VehicleSelectionScreenState extends ConsumerState<VehicleSelectionScreen>
     ),
     _VehicleDisplayData(
       type: VehicleType.tipper10Wheeler,
-      title: '10-Wheeler Heavy Dumper',
-      isBestMatch: false,
+      title: '10-Wheeler Heavy Dumper (20T)',
+      capacityTons: 20.0,
       fare: 2600,
       capacity: '20 Tons',
       distance: '4.1 km',
@@ -55,13 +54,37 @@ class _VehicleSelectionScreenState extends ConsumerState<VehicleSelectionScreen>
     ),
   ];
 
+  static VehicleType _computeBestMatch(double tons) {
+    if (tons <= 2.0) return VehicleType.pickup8ft;
+    if (tons <= 10.0) return VehicleType.tipper6Wheeler;
+    return VehicleType.tipper10Wheeler;
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(bookingFlowProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currentLang = ref.watch(appLocaleProvider).languageCode.toUpperCase();
+    final langCode = ref.watch(appLocaleProvider).languageCode;
 
-    final selectedVehicle = state.selectedVehicleType ?? VehicleType.tipper6Wheeler;
+    final bestMatchType = _computeBestMatch(state.quantityTons);
+
+    final currentSelectedType = state.selectedVehicleType;
+    final currentSelectedVehicle = currentSelectedType != null
+        ? _vehicles.firstWhere((v) => v.type == currentSelectedType, orElse: () => _vehicles[0])
+        : null;
+
+    final selectedVehicle = (currentSelectedVehicle != null && currentSelectedVehicle.capacityTons >= state.quantityTons)
+        ? currentSelectedType!
+        : bestMatchType;
+
+    if (state.selectedVehicleType != selectedVehicle) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(bookingFlowProvider.notifier).selectVehicle(selectedVehicle);
+        }
+      });
+    }
+
     final selectedData = _vehicles.firstWhere(
       (v) => v.type == selectedVehicle,
       orElse: () => _vehicles.first,
@@ -87,62 +110,6 @@ class _VehicleSelectionScreenState extends ConsumerState<VehicleSelectionScreen>
             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
           ),
         ),
-        actions: [
-          // Theme Toggle
-          IconButton(
-            icon: Icon(
-              isDark ? Icons.nightlight_round : Icons.wb_sunny_rounded,
-              size: 18,
-              color: isDark ? Colors.amber : AppColors.secondary,
-            ),
-            onPressed: () => ref.read(themeModeProvider.notifier).toggleTheme(context),
-          ),
-          // Language Capsule
-          InkWell(
-            onTap: () {
-              final currentCode = ref.read(appLocaleProvider).languageCode;
-              ref.read(appLocaleProvider.notifier).setLocale(currentCode == 'en' ? 'ta' : 'en');
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurfaceVariant : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    currentLang,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 3),
-                  Icon(
-                    Icons.signal_cellular_alt_rounded,
-                    size: 11,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Padding(
-            padding: const EdgeInsets.only(right: 14.0),
-            child: CircleAvatar(
-              radius: 15,
-              backgroundColor: AppColors.primaryContainer,
-              child: const Icon(Icons.person, size: 18, color: AppColors.primary),
-            ),
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -259,7 +226,9 @@ class _VehicleSelectionScreenState extends ConsumerState<VehicleSelectionScreen>
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'For ${state.quantityTons.toStringAsFixed(state.quantityTons.truncateToDouble() == state.quantityTons ? 0 : 1)} Tons ${state.selectedMaterial.name.split(" ").first}',
+                              langCode == 'ta'
+                                  ? '${state.quantityTons.toStringAsFixed(state.quantityTons.truncateToDouble() == state.quantityTons ? 0 : 1)} டன் ${state.selectedMaterial.localizedName(langCode)}'
+                                  : 'For ${state.quantityTons.toStringAsFixed(state.quantityTons.truncateToDouble() == state.quantityTons ? 0 : 1)} Tons ${state.selectedMaterial.localizedName(langCode)}',
                               style: const TextStyle(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w700,
@@ -276,55 +245,145 @@ class _VehicleSelectionScreenState extends ConsumerState<VehicleSelectionScreen>
                   // Vehicle Cards List
                   ..._vehicles.map((v) {
                     final isSelected = selectedVehicle == v.type;
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 14),
+                    final isUnderCapacity = v.capacityTons < state.quantityTons;
+                    final isBestMatch = !isUnderCapacity && v.type == bestMatchType;
+                    final formattedQty = state.quantityTons.toStringAsFixed(state.quantityTons.truncateToDouble() == state.quantityTons ? 0 : 1);
+
+                    Widget cardBody = Container(
+                      margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurfaceCard : Colors.white,
-                        borderRadius: BorderRadius.circular(14),
+                        color: isUnderCapacity
+                            ? (isDark ? const Color(0xFF1E1E24) : const Color(0xFFF8FAFC))
+                            : (isSelected
+                                ? (isDark ? const Color(0xFF2A1A10) : const Color(0xFFFCE3D7))
+                                : (isDark ? AppColors.darkSurfaceCard : Colors.white)),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isSelected
-                              ? AppColors.primary
-                              : (isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0)),
-                          width: isSelected ? 1.8 : 1.0,
+                          color: isUnderCapacity
+                              ? (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0))
+                              : (isSelected
+                                  ? AppColors.primary
+                                  : (isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0))),
+                          width: isSelected ? 2.0 : 1.0,
                         ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Top: Title, Best Match badge, Fare
+                          // Top: Title, Best Match badge / Under Capacity badge, Fare
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                child: Wrap(
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  spacing: 6,
-                                  runSpacing: 2,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      v.title,
-                                      style: TextStyle(
-                                        fontSize: 13.5,
-                                        fontWeight: FontWeight.w800,
-                                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                                      ),
-                                    ),
-                                    if (v.isBestMatch)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: isDark ? const Color(0xFFB45309) : const Color(0xFFEA580C),
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          context.tr('best_match'),
-                                          style: const TextStyle(
-                                            fontSize: 9,
+                                    Wrap(
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      spacing: 6,
+                                      runSpacing: 4,
+                                      children: [
+                                        Text(
+                                          v.title,
+                                          style: TextStyle(
+                                            fontSize: 13.5,
                                             fontWeight: FontWeight.w800,
-                                            color: Colors.white,
+                                            color: isUnderCapacity
+                                                ? (isDark ? Colors.white54 : Colors.black45)
+                                                : (isDark ? AppColors.darkTextPrimary : AppColors.textPrimary),
                                           ),
                                         ),
+                                        if (isUnderCapacity)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: isDark ? const Color(0xFF451A1A) : const Color(0xFFFEE2E2),
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(color: const Color(0xFFF87171), width: 0.8),
+                                            ),
+                                            child: Text(
+                                              context.tr('under_capacity_reason').replaceAll(
+                                                '{cap}',
+                                                v.capacityTons.toStringAsFixed(v.capacityTons.truncateToDouble() == v.capacityTons ? 0 : 1),
+                                              ),
+                                              style: const TextStyle(
+                                                fontSize: 9.5,
+                                                fontWeight: FontWeight.w800,
+                                                color: Color(0xFFDC2626),
+                                              ),
+                                            ),
+                                          )
+                                        else if (isBestMatch)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: isDark ? const Color(0xFFB45309) : const Color(0xFFEA580C),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              context.tr('best_match'),
+                                              style: const TextStyle(
+                                                fontSize: 9.5,
+                                                fontWeight: FontWeight.w800,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    if (isBestMatch) ...[
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.check_circle_rounded,
+                                            size: 13,
+                                            color: isDark ? const Color(0xFFF97316) : AppColors.primary,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              context.tr('best_match_fits_trip').replaceAll('{qty}', formattedQty),
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700,
+                                                color: isDark ? const Color(0xFFF97316) : AppColors.primary,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
                                       ),
+                                    ] else if (isUnderCapacity) ...[
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.info_outline_rounded,
+                                            size: 13,
+                                            color: Color(0xFFDC2626),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              context.tr('under_capacity_reason').replaceAll(
+                                                '{cap}',
+                                                v.capacityTons.toStringAsFixed(v.capacityTons.truncateToDouble() == v.capacityTons ? 0 : 1),
+                                              ),
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700,
+                                                color: Color(0xFFDC2626),
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),
@@ -456,66 +515,116 @@ class _VehicleSelectionScreenState extends ConsumerState<VehicleSelectionScreen>
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              isSelected
-                                  ? ElevatedButton.icon(
-                                      onPressed: () {},
-                                      icon: const Icon(Icons.check, size: 14, color: Colors.white),
-                                      label: Text(
-                                        context.tr('selected_status'),
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                        ),
+                              isUnderCapacity
+                                  ? Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                                      decoration: BoxDecoration(
+                                        color: isDark ? const Color(0xFF2A1515) : const Color(0xFFFEF2F2),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: const Color(0xFFFCA5A5), width: 0.8),
                                       ),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.primary,
-                                        elevation: 0,
-                                        minimumSize: const Size(86, 32),
-                                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.block_rounded, size: 13, color: Color(0xFFDC2626)),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            context.tr('under_capacity_btn'),
+                                            style: const TextStyle(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: Color(0xFFDC2626),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     )
-                                  : OutlinedButton(
-                                      onPressed: () {
-                                        ref.read(bookingFlowProvider.notifier).selectVehicle(v.type);
-                                      },
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: isDark ? Colors.white : Colors.black87,
-                                        minimumSize: const Size(80, 32),
-                                        side: BorderSide(
-                                          color: isDark ? AppColors.darkBorder : const Color(0xFFCBD5E1),
-                                        ),
-                                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        context.tr('select_action'),
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
+                                  : (isSelected
+                                      ? ElevatedButton.icon(
+                                          onPressed: () {},
+                                          icon: const Icon(Icons.check, size: 14, color: Colors.white),
+                                          label: Text(
+                                            context.tr('selected_status'),
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppColors.primary,
+                                            elevation: 0,
+                                            minimumSize: const Size(86, 36),
+                                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                        )
+                                      : OutlinedButton(
+                                          onPressed: () {
+                                            ref.read(bookingFlowProvider.notifier).selectVehicle(v.type);
+                                          },
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: isDark ? Colors.white : Colors.black87,
+                                            minimumSize: const Size(80, 36),
+                                            side: BorderSide(
+                                              color: isDark ? AppColors.darkBorder : const Color(0xFFCBD5E1),
+                                            ),
+                                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            context.tr('select_action'),
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        )),
                             ],
                           ),
                         ],
+                      ),
+                    );
+
+                    return InkWell(
+                      onTap: isUnderCapacity
+                          ? () {
+                              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    context.tr('vehicle_under_capacity_warning'),
+                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                  ),
+                                  backgroundColor: const Color(0xFFDC2626),
+                                  duration: const Duration(seconds: 2),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          : () {
+                              ref.read(bookingFlowProvider.notifier).selectVehicle(v.type);
+                            },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Opacity(
+                        opacity: isUnderCapacity ? 0.6 : 1.0,
+                        child: cardBody,
                       ),
                     );
                   }),
 
                   const SizedBox(height: 10),
 
-                  // BuildMove Price Guarantee Banner
+                  // BuildMove Price Guarantee Banner (Compact & Reachable)
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF131B2A) : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(10),
@@ -523,61 +632,39 @@ class _VehicleSelectionScreenState extends ConsumerState<VehicleSelectionScreen>
                         color: isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0),
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.verified_outlined,
-                              size: 14,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              context.tr('price_guarantee_title'),
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                              ),
-                            ),
-                          ],
+                        const Icon(
+                          Icons.verified_outlined,
+                          size: 16,
+                          color: AppColors.primary,
                         ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 4,
-                          children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.check, size: 12, color: Color(0xFF16A34A)),
-                                const SizedBox(width: 4),
-                                Text(
-                                  context.tr('crew_included'),
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                                  ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                context.tr('price_guarantee_title'),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                                 ),
-                              ],
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.check, size: 12, color: Color(0xFF16A34A)),
-                                const SizedBox(width: 4),
-                                Text(
-                                  context.tr('free_buffer_60'),
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                                  ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${context.tr('crew_included')} • ${context.tr('free_buffer_60')}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                                 ),
-                              ],
-                            ),
-                          ],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -608,25 +695,31 @@ class _VehicleSelectionScreenState extends ConsumerState<VehicleSelectionScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.local_shipping_rounded,
-                              size: 15,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              selectedData.title,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        Expanded(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.local_shipping_rounded,
+                                size: 15,
+                                color: AppColors.primary,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  selectedData.title,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         Text(
                           '₹${selectedData.fare.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')} est.',
                           style: TextStyle(
@@ -638,15 +731,34 @@ class _VehicleSelectionScreenState extends ConsumerState<VehicleSelectionScreen>
                       ],
                     ),
                     const SizedBox(height: 8),
+                    if (selectedData.capacityTons < state.quantityTons)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Text(
+                          context.tr('vehicle_under_capacity_warning'),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFFDC2626),
+                            fontWeight: FontWeight.w700,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     SizedBox(
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
-                        onPressed: () {
-                          context.push(AppRoutes.customerBookingConfirmation);
-                        },
+                        onPressed: selectedData.capacityTons < state.quantityTons
+                            ? null
+                            : () {
+                                context.push(AppRoutes.customerBookingConfirmation);
+                              },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: selectedData.capacityTons < state.quantityTons
+                              ? (isDark ? Colors.white24 : Colors.grey.shade400)
+                              : AppColors.primary,
+                          disabledBackgroundColor: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                          disabledForegroundColor: isDark ? Colors.white38 : const Color(0xFF94A3B8),
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -687,7 +799,7 @@ class _VehicleSelectionScreenState extends ConsumerState<VehicleSelectionScreen>
 class _VehicleDisplayData {
   final VehicleType type;
   final String title;
-  final bool isBestMatch;
+  final double capacityTons;
   final int fare;
   final String capacity;
   final String distance;
@@ -698,7 +810,7 @@ class _VehicleDisplayData {
   const _VehicleDisplayData({
     required this.type,
     required this.title,
-    required this.isBestMatch,
+    required this.capacityTons,
     required this.fare,
     required this.capacity,
     required this.distance,

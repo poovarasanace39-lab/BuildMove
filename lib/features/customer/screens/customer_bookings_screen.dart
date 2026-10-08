@@ -195,7 +195,7 @@ class CustomerBookingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            '${booking.quantityTons} ${(Localizations.maybeLocaleOf(context)?.languageCode == 'ta' ? 'டன்' : 'Tons')} • ${booking.materialType.name} (${booking.vehicleType.name})',
+            '${booking.quantityTons} ${(Localizations.maybeLocaleOf(context)?.languageCode == 'ta' ? 'டன்' : 'Tons')} • ${booking.materialType.localizedName(Localizations.maybeLocaleOf(context)?.languageCode ?? 'en')} (${booking.vehicleType.name})',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,

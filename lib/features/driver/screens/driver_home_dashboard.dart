@@ -76,7 +76,7 @@ class _DriverHomeDashboardState extends ConsumerState<DriverHomeDashboard> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Tata Ace • TN-02-AL-8921',
+                          '6-Wheeler Tipper (10T) • TN-02-AL-8921',
                           style: AppTypography.bodySmall.copyWith(
                             color: isDark ? AppColors.darkTextTertiary : AppColors.textSecondary,
                           ),
@@ -182,7 +182,7 @@ class _DriverHomeDashboardState extends ConsumerState<DriverHomeDashboard> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${completedTrips.length} ${context.tr('trips_paid_label')}',
+                            '${completedTrips.length} ${completedTrips.length == 1 ? context.tr('trip_completed_single') : context.tr('trips_completed_plural')}',
                             style: AppTypography.labelSmall.copyWith(
                               color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
                             ),
@@ -418,7 +418,7 @@ class _DriverHomeDashboardState extends ConsumerState<DriverHomeDashboard> {
           const SizedBox(height: 12),
 
           Text(
-            '${context.tr('load_label')}: ${trip.quantityTons} ${(Localizations.maybeLocaleOf(context)?.languageCode == 'ta' ? 'டன்' : 'Tons')} • ${trip.materialType.name}',
+            '${context.tr('load_label')}: ${trip.quantityTons} ${(Localizations.maybeLocaleOf(context)?.languageCode == 'ta' ? 'டன்' : 'Tons')} • ${trip.materialType.localizedName(Localizations.maybeLocaleOf(context)?.languageCode ?? 'en')}',
             style: AppTypography.bodyMedium.copyWith(
               fontWeight: FontWeight.bold,
               color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
@@ -691,7 +691,7 @@ class _DriverHomeDashboardState extends ConsumerState<DriverHomeDashboard> {
           ),
           const SizedBox(height: 10),
           Text(
-            '${req.quantityTons} ${(Localizations.maybeLocaleOf(context)?.languageCode == 'ta' ? 'டன்' : 'Tons')} • ${req.materialType.name}',
+            '${req.quantityTons} ${(Localizations.maybeLocaleOf(context)?.languageCode == 'ta' ? 'டன்' : 'Tons')} • ${req.materialType.localizedName(Localizations.maybeLocaleOf(context)?.languageCode ?? 'en')}',
             style: AppTypography.titleSmall.copyWith(
               color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
               fontWeight: FontWeight.w600,

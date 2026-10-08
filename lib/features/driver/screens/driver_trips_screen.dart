@@ -128,8 +128,10 @@ class DriverTripsScreen extends ConsumerWidget {
   }) {
     final fare = trip.actualFare ?? trip.estimatedFare;
     final fareText = fare > 0
-        ? '${AppConstants.currencySymbol}${fare.toInt()}'
+        ? '${context.tr('fare_label')}: ${AppConstants.currencySymbol}${fare.toInt()}'
         : context.tr('fare_unavailable');
+
+    final langCode = Localizations.maybeLocaleOf(context)?.languageCode ?? 'en';
 
     return AppCard(
       padding: const EdgeInsets.all(14),
@@ -152,7 +154,7 @@ class DriverTripsScreen extends ConsumerWidget {
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  '${context.tr('fare_label')}: $fareText',
+                  fareText,
                   style: AppTypography.titleSmall.copyWith(
                     color: isActive ? AppColors.primaryDark : AppColors.success,
                     fontWeight: FontWeight.bold,
@@ -165,7 +167,7 @@ class DriverTripsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${trip.quantityTons} ${(Localizations.maybeLocaleOf(context)?.languageCode == 'ta' ? 'டன்' : 'Tons')} • ${trip.materialType.name}',
+            '${trip.quantityTons} ${(langCode == 'ta' ? 'டன்' : 'Tons')} • ${trip.materialType.localizedName(langCode)}',
             style: AppTypography.bodySmall.copyWith(
               fontWeight: FontWeight.w600,
               color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,

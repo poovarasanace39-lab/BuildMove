@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/routing/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/theme_provider.dart';
 import '../../../models/enums.dart';
 import '../../booking/providers/booking_flow_provider.dart';
 import '../providers/customer_notifications_provider.dart';
@@ -79,9 +78,8 @@ class CustomerHomeDashboard extends ConsumerWidget {
     );
   }
 
-  /// 1. Top Bar: App Logo, Title + Subtitle, Theme Toggle, Language Capsule, Bell, Avatar
+  /// 1. Top Bar: App Logo, Title + Subtitle, Notification Bell, Avatar
   Widget _buildTopBar(BuildContext context, WidgetRef ref, bool isDark) {
-    final currentLang = ref.watch(appLocaleProvider).languageCode.toUpperCase();
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -155,144 +153,61 @@ class CustomerHomeDashboard extends ConsumerWidget {
         ),
         const SizedBox(width: 8),
 
-        // Right Controls: Theme Toggle + Language Capsule + Notification Bell + Avatar
+        // Right Controls: Single Notification Entry Point + Avatar
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Theme Toggle Pill
+            // Notification Bell (48x48 touch target, clear entry point)
             InkWell(
+              key: const Key('home_notification_bell'),
               onTap: () {
-                ref.read(themeModeProvider.notifier).toggleTheme(context);
+                ref.read(customerShellTabProvider.notifier).state = 2;
               },
-              borderRadius: BorderRadius.circular(20),
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
+              borderRadius: BorderRadius.circular(24),
+              child: Container(
+                width: 48,
+                height: 48,
+                alignment: Alignment.center,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                  padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.darkSurfaceVariant : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    shape: BoxShape.circle,
                     border: Border.all(
                       color: isDark ? AppColors.darkBorder : AppColors.border,
                       width: 1,
                     ),
                   ),
                   child: Icon(
-                    isDark ? Icons.nightlight_round : Icons.wb_sunny_rounded,
-                    size: 15,
-                    color: isDark ? Colors.amber : AppColors.secondary,
+                    Icons.notifications_outlined,
+                    size: 18,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                   ),
                 ),
               ),
             ),
             const SizedBox(width: 4),
 
-            // Language Toggle Capsule (EN / TA)
-            InkWell(
-              onTap: () {
-                final currentCode = ref.read(appLocaleProvider).languageCode;
-                final nextCode = currentCode == 'en' ? 'ta' : 'en';
-                ref.read(appLocaleProvider.notifier).setLocale(nextCode);
-              },
-              borderRadius: BorderRadius.circular(20),
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurfaceVariant : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isDark ? AppColors.darkBorder : AppColors.border,
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        currentLang,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(width: 3),
-                      Icon(
-                        Icons.signal_cellular_alt_rounded,
-                        size: 11,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 4),
-
-            // Notification Bell with Unread Dot
-            InkWell(
-              key: const Key('home_notification_bell'),
-              onTap: () {
-                ref.read(customerShellTabProvider.notifier).state = 2;
-              },
-              borderRadius: BorderRadius.circular(20),
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.darkSurfaceVariant : Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isDark ? AppColors.darkBorder : AppColors.border,
-                          width: 1,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.notifications_outlined,
-                        size: 15,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-                      ),
-                    ),
-                    if (ref.watch(unreadNotificationCountProvider) > 0)
-                      Positioned(
-                        top: 1,
-                        right: 1,
-                        child: Container(
-                          width: 6,
-                          height: 6,
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 5),
-
-            // Profile Avatar
+            // Profile Avatar (48x48 touch target)
             InkWell(
               onTap: () {
                 ref.read(customerShellTabProvider.notifier).state = 3;
               },
-              borderRadius: BorderRadius.circular(15),
-              child: CircleAvatar(
-                radius: 15,
-                backgroundColor: isDark
-                    ? AppColors.primary.withAlpha(40)
-                    : AppColors.primaryContainer,
-                child: Icon(
-                  Icons.person,
-                  size: 17,
-                  color: isDark ? AppColors.primaryLight : AppColors.primary,
+              borderRadius: BorderRadius.circular(24),
+              child: Container(
+                width: 48,
+                height: 48,
+                alignment: Alignment.center,
+                child: CircleAvatar(
+                  radius: 16,
+                  backgroundColor: isDark
+                      ? AppColors.primary.withAlpha(40)
+                      : AppColors.primaryContainer,
+                  child: Icon(
+                    Icons.person,
+                    size: 18,
+                    color: isDark ? AppColors.primaryLight : AppColors.primary,
+                  ),
                 ),
               ),
             ),
@@ -302,7 +217,7 @@ class CustomerHomeDashboard extends ConsumerWidget {
     );
   }
 
-  /// 2. Contractor Greeting: ", Rajesh Good morning" + "Kavitha Constructions • GST Verified" + "TN Fleet" badge
+  /// 2. Contractor Greeting: "Hi, Ramesh Good morning" + "BuildCon Infra Pvt Ltd • GST Verified"
   Widget _buildContractorGreeting(BuildContext context, bool isDark) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -313,14 +228,8 @@ class CustomerHomeDashboard extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  Icon(
-                    Icons.waves_rounded,
-                    size: 16,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 6),
                   Text(
-                    'Hi, Rajesh',
+                    'Hi, Ramesh',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
@@ -350,7 +259,7 @@ class CustomerHomeDashboard extends ConsumerWidget {
                   const SizedBox(width: 4),
                   Flexible(
                     child: Text(
-                      'Kavitha Constructions',
+                      'BuildCon Infra Pvt Ltd',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -383,37 +292,6 @@ class CustomerHomeDashboard extends ConsumerWidget {
                     ),
                   ),
                 ],
-              ),
-            ],
-          ),
-        ),
-
-        // TN Fleet Badge Pill
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E293B) : const Color(0xFF0F172A),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Column(
-            children: [
-              Text(
-                'TN',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  height: 1.0,
-                ),
-              ),
-              Text(
-                'Fleet',
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white70,
-                  height: 1.0,
-                ),
               ),
             ],
           ),
@@ -510,12 +388,6 @@ class CustomerHomeDashboard extends ConsumerWidget {
                                         letterSpacing: 0.5,
                                         color: isDark ? AppColors.darkTextTertiary : AppColors.textTertiary,
                                       ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      Icons.graphic_eq_rounded,
-                                      size: 11,
-                                      color: isDark ? AppColors.darkTextTertiary : AppColors.textTertiary,
                                     ),
                                   ],
                                 ),
@@ -632,12 +504,6 @@ class CustomerHomeDashboard extends ConsumerWidget {
                                         letterSpacing: 0.5,
                                         color: isDark ? AppColors.darkTextTertiary : AppColors.textTertiary,
                                       ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      Icons.graphic_eq_rounded,
-                                      size: 11,
-                                      color: isDark ? AppColors.darkTextTertiary : AppColors.textTertiary,
                                     ),
                                   ],
                                 ),
@@ -836,6 +702,18 @@ class CustomerHomeDashboard extends ConsumerWidget {
         nameEn: 'Tiles & Granite',
         nameTa: 'டைல்ஸ்',
         icon: Icons.layers_outlined,
+      ),
+      _MaterialItem(
+        material: ConstructionMaterial.timber,
+        nameEn: 'Timber & Plywood',
+        nameTa: 'மரம் & பிளைவுட்',
+        icon: Icons.forest_outlined,
+      ),
+      _MaterialItem(
+        material: ConstructionMaterial.debris,
+        nameEn: 'Site Debris',
+        nameTa: 'கட்டுமான கழிவு',
+        icon: Icons.delete_sweep_outlined,
       ),
     ];
 

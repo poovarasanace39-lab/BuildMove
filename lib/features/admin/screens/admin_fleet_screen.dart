@@ -4,6 +4,7 @@ import '../../../core/localization/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_card.dart';
+import '../../../models/enums.dart';
 import '../providers/fleet_provider.dart';
 
 class AdminFleetScreen extends ConsumerWidget {
@@ -55,7 +56,16 @@ class AdminFleetScreen extends ConsumerWidget {
                     final String statusText;
                     final Color statusColor;
 
-                    if (v.isAvailable) {
+                    final bool hasPendingKyc = v.documents.any((d) => d.status == DocumentStatus.pending);
+                    final bool hasRejectedKyc = v.documents.any((d) => d.status == DocumentStatus.rejected);
+
+                    if (hasPendingKyc) {
+                      statusText = 'Pending KYC Review';
+                      statusColor = AppColors.warning;
+                    } else if (hasRejectedKyc) {
+                      statusText = 'KYC Rejected';
+                      statusColor = AppColors.error;
+                    } else if (v.isAvailable) {
                       if (driver?.isOnline ?? false) {
                         statusText = 'Available Online';
                         statusColor = AppColors.success;
@@ -116,7 +126,7 @@ class AdminFleetScreen extends ConsumerWidget {
                                   '$driverName • ${v.modelName}',
                                   style: AppTypography.bodySmall,
                                 ),
-                                const SizedBox(height: 2),
+                                const SizedBox(height: 4),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
@@ -124,35 +134,52 @@ class AdminFleetScreen extends ConsumerWidget {
                                       'Completed Loads: $tripsCount',
                                       style: const TextStyle(fontSize: 11, color: AppColors.textTertiary),
                                     ),
-                                    InkWell(
-                                      borderRadius: BorderRadius.circular(4),
-                                      onTap: () async {
-                                        await ref
-                                            .read(fleetNotifierProvider.notifier)
-                                            .toggleVehicleAvailability(v.id);
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                '${v.plateNumber} set to ${!v.isAvailable ? "Available" : "Unavailable"}',
-                                              ),
-                                              duration: const Duration(seconds: 1),
-                                            ),
-                                          );
-                                        }
-                                      },
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                    if (hasPendingKyc || hasRejectedKyc)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: (hasPendingKyc ? AppColors.warning : AppColors.error).withAlpha(20),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
                                         child: Text(
-                                          v.isAvailable ? 'Toggle Off' : 'Toggle On',
+                                          hasPendingKyc ? 'KYC Required' : 'KYC Rejected',
                                           style: TextStyle(
                                             fontSize: 10,
                                             fontWeight: FontWeight.bold,
-                                            color: v.isAvailable ? AppColors.warning : AppColors.success,
+                                            color: hasPendingKyc ? AppColors.warning : AppColors.error,
+                                          ),
+                                        ),
+                                      )
+                                    else
+                                      InkWell(
+                                        borderRadius: BorderRadius.circular(6),
+                                        onTap: () async {
+                                          await ref
+                                              .read(fleetNotifierProvider.notifier)
+                                              .toggleVehicleAvailability(v.id);
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  '${v.plateNumber} set to ${!v.isAvailable ? "Available" : "Unavailable"}',
+                                                ),
+                                                duration: const Duration(seconds: 1),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          child: Text(
+                                            v.isAvailable ? 'Toggle Off' : 'Toggle On',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: v.isAvailable ? AppColors.warning : AppColors.success,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
                                   ],
                                 ),
                               ],

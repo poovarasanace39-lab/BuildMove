@@ -2,6 +2,7 @@ import '../../models/driver_profile_model.dart';
 import '../../models/enums.dart';
 import '../../models/user_model.dart';
 import '../../models/vehicle_model.dart';
+import '../demo/demo_data_service.dart';
 import 'fleet_service_interface.dart';
 
 /// In-memory mock implementation of [IFleetService].
@@ -28,7 +29,22 @@ class MockFleetService implements IFleetService {
     _seeded = false;
   }
 
+  /// Toggles empty or populated fleet state for testing
+  static void setFleetEmpty(bool empty) {
+    _vehicles.clear();
+    _drivers.clear();
+    _driverUsers.clear();
+    if (!empty) {
+      final s = MockFleetService();
+      s._initializeSeedData();
+    }
+    _seeded = true;
+  }
+
   void _initializeSeedData() {
+    if (DemoDataService.instance.isFleetEmpty) {
+      return;
+    }
     _driverUsers.addAll([
       UserModel(
         id: 'usr_drv_002',
@@ -193,10 +209,10 @@ class MockFleetService implements IFleetService {
       VehicleModel(
         id: 'veh_001',
         driverId: 'usr_drv_002',
-        type: VehicleType.tataAce,
-        modelName: 'Tata Ace (0.8T)',
+        type: VehicleType.tipper6Wheeler,
+        modelName: '6-Wheeler Tipper (10T)',
         plateNumber: 'TN-02-AL-8921',
-        capacityTons: 0.8,
+        capacityTons: 10.0,
         isAvailable: true,
         documents: [
           VehicleDocumentModel(
@@ -402,7 +418,11 @@ class MockFleetService implements IFleetService {
     await Future.delayed(const Duration(milliseconds: 150));
     final index = _vehicles.indexWhere((v) => v.id == vehicleId);
     if (index != -1) {
-      _vehicles[index] = _vehicles[index].copyWith(isAvailable: isAvailable);
+      final veh = _vehicles[index];
+      // A vehicle with pending or rejected documents CANNOT be set available online!
+      final hasPendingOrRejected = veh.documents.any((d) => d.status != DocumentStatus.approved);
+      final actualAvailable = hasPendingOrRejected ? false : isAvailable;
+      _vehicles[index] = veh.copyWith(isAvailable: actualAvailable);
     }
   }
 

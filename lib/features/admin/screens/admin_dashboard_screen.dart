@@ -268,7 +268,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  'Order #${b.id} • ${b.materialType.name}',
+                                  'Order #${b.id} • ${b.materialType.localizedName(Localizations.maybeLocaleOf(context)?.languageCode ?? 'en')}',
                                   style: AppTypography.titleSmall,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,

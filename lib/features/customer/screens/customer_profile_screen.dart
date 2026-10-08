@@ -10,7 +10,15 @@ import '../../../core/theme/theme_provider.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/contact_action_helper.dart';
+import '../../../models/enums.dart';
+import '../../../services/auth/dev_auth_service.dart';
+import '../../../services/demo/demo_data_service.dart';
+import '../../../services/booking/mock_booking_service.dart';
+import '../../../services/fleet/mock_fleet_service.dart';
+import '../../admin/providers/fleet_provider.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../booking/providers/booking_flow_provider.dart';
+import '../providers/customer_notifications_provider.dart';
 
 class CustomerProfileScreen extends ConsumerStatefulWidget {
   const CustomerProfileScreen({super.key});
@@ -495,6 +503,229 @@ class _CustomerProfileScreenState extends ConsumerState<CustomerProfileScreen> {
     );
   }
 
+  void _showDemoDataControls(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Demo / Test Data Control',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      key: const Key('modal_reset_demo_data_btn'),
+                      icon: const Icon(Icons.restore_rounded),
+                      label: const Text('RESET ALL DEMO DATA'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () {
+                        DemoDataService.instance.resetToInitialState();
+                        ref.read(customerNotificationsProvider.notifier).resetToDemo();
+                        ref.invalidate(activeBookingsProvider);
+                        ref.invalidate(bookingHistoryProvider);
+                        ref.invalidate(driverIncomingRequestsProvider);
+                        ref.read(fleetNotifierProvider.notifier).loadFleetData();
+                        Navigator.of(ctx).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Demo data reset to initial test state'),
+                            duration: Duration(seconds: 2),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Notifications State:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          key: const Key('btn_empty_notifications'),
+                          onPressed: () {
+                            ref.read(customerNotificationsProvider.notifier).clearAll();
+                            Navigator.of(ctx).pop();
+                          },
+                          child: const Text('Empty (0)'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          key: const Key('btn_populate_notifications'),
+                          onPressed: () {
+                            ref.read(customerNotificationsProvider.notifier).resetToDemo();
+                            Navigator.of(ctx).pop();
+                          },
+                          child: const Text('Populated (3)'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Bookings State:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          key: const Key('btn_empty_bookings'),
+                          onPressed: () {
+                            MockBookingService.setBookingsEmpty(true);
+                            ref.invalidate(activeBookingsProvider);
+                            ref.invalidate(bookingHistoryProvider);
+                            Navigator.of(ctx).pop();
+                          },
+                          child: const Text('Empty Bookings'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          key: const Key('btn_populate_bookings'),
+                          onPressed: () {
+                            MockBookingService.setBookingsEmpty(false);
+                            ref.invalidate(activeBookingsProvider);
+                            ref.invalidate(bookingHistoryProvider);
+                            Navigator.of(ctx).pop();
+                          },
+                          child: const Text('Populated Bookings'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Primary Booking (BM-8492) State:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      ActionChip(
+                        key: const Key('chip_booking_created'),
+                        label: const Text('Created'),
+                        onPressed: () {
+                          MockBookingService.setBookingStatus('BM-8492', BookingStatus.pending);
+                          ref.invalidate(activeBookingsProvider);
+                          ref.invalidate(bookingHistoryProvider);
+                          Navigator.of(ctx).pop();
+                        },
+                      ),
+                      ActionChip(
+                        key: const Key('chip_booking_assigned'),
+                        label: const Text('Driver Assigned'),
+                        onPressed: () {
+                          MockBookingService.setBookingStatus('BM-8492', BookingStatus.accepted);
+                          ref.invalidate(activeBookingsProvider);
+                          ref.invalidate(bookingHistoryProvider);
+                          Navigator.of(ctx).pop();
+                        },
+                      ),
+                      ActionChip(
+                        key: const Key('chip_booking_intransit'),
+                        label: const Text('In Transit'),
+                        onPressed: () {
+                          MockBookingService.setBookingStatus('BM-8492', BookingStatus.inProgress);
+                          ref.invalidate(activeBookingsProvider);
+                          ref.invalidate(bookingHistoryProvider);
+                          Navigator.of(ctx).pop();
+                        },
+                      ),
+                      ActionChip(
+                        key: const Key('chip_booking_delivered'),
+                        label: const Text('Delivered'),
+                        onPressed: () {
+                          MockBookingService.setBookingStatus('BM-8492', BookingStatus.completed);
+                          ref.invalidate(activeBookingsProvider);
+                          ref.invalidate(bookingHistoryProvider);
+                          Navigator.of(ctx).pop();
+                        },
+                      ),
+                      ActionChip(
+                        key: const Key('chip_booking_cancelled'),
+                        label: const Text('Cancelled'),
+                        onPressed: () {
+                          MockBookingService.setBookingStatus('BM-8492', BookingStatus.cancelled);
+                          ref.invalidate(activeBookingsProvider);
+                          ref.invalidate(bookingHistoryProvider);
+                          Navigator.of(ctx).pop();
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Fleet & KYC State:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          key: const Key('btn_empty_fleet'),
+                          onPressed: () {
+                            MockFleetService.setFleetEmpty(true);
+                            ref.read(fleetNotifierProvider.notifier).loadFleetData();
+                            Navigator.of(ctx).pop();
+                          },
+                          child: const Text('Empty Fleet'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton(
+                          key: const Key('btn_reset_fleet'),
+                          onPressed: () {
+                            MockFleetService.setFleetEmpty(false);
+                            ref.read(fleetNotifierProvider.notifier).loadFleetData();
+                            Navigator.of(ctx).pop();
+                          },
+                          child: const Text('Populated Fleet (8)'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _confirmLogout(BuildContext context) {
     showDialog(
       context: context,
@@ -529,8 +760,14 @@ class _CustomerProfileScreenState extends ConsumerState<CustomerProfileScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final user = authState.currentUser;
+    final customerUser = (user != null && user.role == UserRole.customer)
+        ? user
+        : DevAuthService.mockUsers[UserRole.customer];
     final locale = ref.watch(appLocaleProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final rawName = customerUser?.name ?? 'Ramesh Sundaram';
+    final displayName = rawName.contains('Site Engineer') ? rawName : '$rawName (Site Engineer)';
 
     final companySub = locale.languageCode == 'ta'
         ? '$_companyName • $_gstNumber'
@@ -583,14 +820,14 @@ class _CustomerProfileScreenState extends ConsumerState<CustomerProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user?.name ?? 'Site Engineer',
+                          displayName,
                           style: AppTypography.titleMedium.copyWith(
                             color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '+91 ${user?.phone ?? '9876543210'}',
+                          '+91 ${customerUser?.phone ?? '9876543210'}',
                           style: AppTypography.bodySmall.copyWith(
                             color: isDark ? AppColors.darkTextSecondary : AppColors.textTertiary,
                           ),
@@ -608,7 +845,7 @@ class _CustomerProfileScreenState extends ConsumerState<CustomerProfileScreen> {
                                 : null,
                           ),
                           child: Text(
-                            user?.role.displayName ?? 'Customer',
+                            'Customer',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
@@ -631,6 +868,42 @@ class _CustomerProfileScreenState extends ConsumerState<CustomerProfileScreen> {
               child: Column(
                 children: [
                   ListTile(
+                    key: const Key('profile_theme_tile'),
+                    leading: Icon(
+                      isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                      color: isDark ? Colors.amber : AppColors.secondary,
+                    ),
+                    title: Text(
+                      context.tr('theme'),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+                      ),
+                    ),
+                    subtitle: Text(
+                      isDark ? context.tr('theme_dark') : context.tr('theme_light'),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.textSecondary,
+                      ),
+                    ),
+                    trailing: Switch.adaptive(
+                      value: isDark,
+                      activeTrackColor: AppColors.primary,
+                      activeThumbColor: Colors.white,
+                      onChanged: (_) {
+                        ref.read(themeModeProvider.notifier).toggleTheme(context);
+                      },
+                    ),
+                    onTap: () => ref.read(themeModeProvider.notifier).toggleTheme(context),
+                  ),
+                  Divider(
+                    height: 1,
+                    color: isDark ? AppColors.darkBorder : AppColors.border,
+                  ),
+                  ListTile(
+                    key: const Key('profile_language_tile'),
                     leading: const Icon(Icons.language, color: AppColors.primary),
                     title: Text(
                       context.tr('language'),
@@ -773,11 +1046,63 @@ class _CustomerProfileScreenState extends ConsumerState<CustomerProfileScreen> {
                     ),
                     onTap: () => _showHelpSupport(context),
                   ),
+                  Divider(
+                    height: 1,
+                    color: isDark ? AppColors.darkBorder : AppColors.border,
+                  ),
+                  ListTile(
+                    key: const Key('demo_data_control_tile'),
+                    leading: const Icon(
+                      Icons.science_outlined,
+                      color: AppColors.primary,
+                    ),
+                    title: const Text(
+                      'Demo / Test Data Control',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      'Deterministic fixtures, empty states & reset',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    trailing: Icon(
+                      Icons.chevron_right,
+                      color: isDark ? AppColors.darkTextTertiary : AppColors.slateMuted,
+                    ),
+                    onTap: () => _showDemoDataControls(context),
+                  ),
                 ],
               ),
             ),
 
             const SizedBox(height: 24),
+
+            // Reset Test / Demo Data Button
+            AppButton(
+              key: const Key('reset_demo_data_btn'),
+              text: 'Demo Data: RESET',
+              variant: AppButtonVariant.outline,
+              icon: Icons.restore_rounded,
+              onPressed: () {
+                DemoDataService.instance.resetToInitialState();
+                ref.read(customerNotificationsProvider.notifier).resetToDemo();
+                ref.invalidate(activeBookingsProvider);
+                ref.invalidate(bookingHistoryProvider);
+                ref.invalidate(driverIncomingRequestsProvider);
+                ref.read(fleetNotifierProvider.notifier).loadFleetData();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Demo data RESET to initial test state'),
+                    duration: Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 14),
 
             // Version info
             Text(

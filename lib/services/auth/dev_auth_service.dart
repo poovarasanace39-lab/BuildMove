@@ -18,7 +18,7 @@ class DevAuthService implements IAuthService {
     UserRole.customer: UserModel(
       id: 'usr_cust_001',
       phone: '9876543210',
-      name: 'Ramesh Sundaram (Site Engineer)',
+      name: 'Ramesh Sundaram',
       email: 'ramesh.build@infra.in',
       role: UserRole.customer,
       isVerified: true,
@@ -27,7 +27,7 @@ class DevAuthService implements IAuthService {
     UserRole.driver: UserModel(
       id: 'usr_drv_002',
       phone: '9840123456',
-      name: 'Murugan K. (Tata Ace Owner/Driver)',
+      name: 'Murugan K.',
       email: 'murugan.trans@gmail.com',
       role: UserRole.driver,
       isVerified: true,
@@ -36,8 +36,8 @@ class DevAuthService implements IAuthService {
     UserRole.admin: UserModel(
       id: 'usr_adm_003',
       phone: '9999900000',
-      name: 'Priya Sharma (Fleet Ops Admin)',
-      email: 'ops.admin@buildmove.in',
+      name: 'Priya Sharma',
+      email: 'admin@buildmove.in',
       role: UserRole.admin,
       isVerified: true,
       createdAt: DateTime.now().subtract(const Duration(days: 90)),

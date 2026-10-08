@@ -58,6 +58,7 @@ class AuthState {
 
   AuthState copyWith({
     UserModel? currentUser,
+    bool clearCurrentUser = false,
     bool? isLoading,
     AppFailure? error,
     bool clearError = false,
@@ -65,7 +66,7 @@ class AuthState {
     String? pendingPhone,
   }) {
     return AuthState(
-      currentUser: currentUser ?? this.currentUser,
+      currentUser: clearCurrentUser ? null : (currentUser ?? this.currentUser),
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
       pendingVerificationId: pendingVerificationId ?? this.pendingVerificationId,
@@ -91,7 +92,11 @@ class AuthNotifier extends Notifier<AuthState> {
     final authService = ref.read(authServiceProvider);
     try {
       final user = await authService.getCurrentUser();
-      state = state.copyWith(currentUser: user, isLoading: false, clearError: true);
+      if (user != null) {
+        state = state.copyWith(currentUser: user, isLoading: false, clearError: true);
+      } else {
+        state = state.copyWith(clearCurrentUser: true, isLoading: false, clearError: true);
+      }
     } catch (_) {
       state = state.copyWith(isLoading: false);
     }
@@ -133,6 +138,7 @@ class AuthNotifier extends Notifier<AuthState> {
 
     return result.fold(
       onSuccess: (authResponse) {
+        clearRoleState();
         state = state.copyWith(
           isLoading: false,
           currentUser: authResponse.user,
@@ -146,7 +152,12 @@ class AuthNotifier extends Notifier<AuthState> {
     );
   }
 
+  void clearRoleState() {
+    // Reset any state associated with previously active role
+  }
+
   Future<void> quickDemoLogin(UserRole role) async {
+    clearRoleState();
     state = state.copyWith(isLoading: true, clearError: true);
     final authService = ref.read(authServiceProvider);
     final user = await authService.devSwitchRole(role);
@@ -158,6 +169,7 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   Future<void> logout() async {
+    clearRoleState();
     state = state.copyWith(isLoading: true);
     final authService = ref.read(authServiceProvider);
     await authService.logout();

@@ -81,12 +81,12 @@ enum BookingStatus {
 }
 
 enum VehicleType {
-  tataAce(name: 'Tata Ace (Chota Hathi)', capacityTons: 0.8, baseFare: 400, perKm: 30),
-  pickup8ft(name: 'Mahindra Bolero Pickup (8ft)', capacityTons: 1.5, baseFare: 650, perKm: 40),
-  eeco(name: 'Maruti Eeco Cargo', capacityTons: 0.5, baseFare: 300, perKm: 25),
-  tipper6Wheeler(name: '6-Wheeler Tipper / Lorry', capacityTons: 10.0, baseFare: 2500, perKm: 85),
-  tipper10Wheeler(name: '10-Wheeler Heavy Dumper', capacityTons: 20.0, baseFare: 4500, perKm: 120),
-  tractorTrolley(name: 'Tractor Trolley (Site Supply)', capacityTons: 5.0, baseFare: 1500, perKm: 60);
+  tataAce(name: 'Tata Ace (0.8T)', capacityTons: 0.8, baseFare: 400, perKm: 30),
+  pickup8ft(name: 'Bolero Maxi / Pickup (2T)', capacityTons: 2.0, baseFare: 650, perKm: 40),
+  eeco(name: 'Maruti Eeco Cargo (0.5T)', capacityTons: 0.5, baseFare: 300, perKm: 25),
+  tipper6Wheeler(name: '6-Wheeler Tipper (10T)', capacityTons: 10.0, baseFare: 1850, perKm: 85),
+  tipper10Wheeler(name: '10-Wheeler Heavy Dumper (20T)', capacityTons: 20.0, baseFare: 2600, perKm: 120),
+  tractorTrolley(name: 'Tractor Trolley (5T)', capacityTons: 5.0, baseFare: 1500, perKm: 60);
 
   final String name;
   final double capacityTons;
@@ -121,14 +121,14 @@ enum VehicleType {
 }
 
 enum ConstructionMaterial {
-  cement(name: 'Cement Bags', defaultUnit: 'Bags / Tons'),
-  sand(name: 'River / M-Sand', defaultUnit: 'Tons'),
-  steel(name: 'TMT Steel Bars', defaultUnit: 'Tons'),
-  bricks(name: 'Red / Fly Ash Bricks', defaultUnit: 'Pieces / Tons'),
-  aggregates(name: 'Blue Metal Gravel (Jelly)', defaultUnit: 'Tons'),
-  tiles(name: 'Tiles & Granite Slabs', defaultUnit: 'Boxes / Tons'),
-  timber(name: 'Centering Plywood & Timber', defaultUnit: 'Loads'),
-  debris(name: 'Construction Site Debris', defaultUnit: 'Tons');
+  cement(name: 'Cement', defaultUnit: 'Tons'),
+  sand(name: 'M-Sand', defaultUnit: 'Tons'),
+  steel(name: 'TMT Steel', defaultUnit: 'Tons'),
+  bricks(name: 'Bricks', defaultUnit: 'Tons'),
+  aggregates(name: 'Blue Metal', defaultUnit: 'Tons'),
+  tiles(name: 'Tiles & Granite', defaultUnit: 'Tons'),
+  timber(name: 'Timber & Plywood', defaultUnit: 'Tons'),
+  debris(name: 'Site Debris', defaultUnit: 'Tons');
 
   final String name;
   final String defaultUnit;
@@ -137,6 +137,52 @@ enum ConstructionMaterial {
     required this.name,
     required this.defaultUnit,
   });
+
+  String get cleanEnglishTitle {
+    switch (this) {
+      case ConstructionMaterial.cement:
+        return 'Cement';
+      case ConstructionMaterial.sand:
+        return 'M-Sand';
+      case ConstructionMaterial.steel:
+        return 'TMT Steel';
+      case ConstructionMaterial.bricks:
+        return 'Bricks';
+      case ConstructionMaterial.aggregates:
+        return 'Blue Metal';
+      case ConstructionMaterial.tiles:
+        return 'Tiles & Granite';
+      case ConstructionMaterial.timber:
+        return 'Timber & Plywood';
+      case ConstructionMaterial.debris:
+        return 'Site Debris';
+    }
+  }
+
+  String get cleanTamilTitle {
+    switch (this) {
+      case ConstructionMaterial.cement:
+        return 'சிமெண்ட்';
+      case ConstructionMaterial.sand:
+        return 'மணல்';
+      case ConstructionMaterial.steel:
+        return 'கம்பிகள்';
+      case ConstructionMaterial.bricks:
+        return 'செங்கல்';
+      case ConstructionMaterial.aggregates:
+        return 'ஜல்லி';
+      case ConstructionMaterial.tiles:
+        return 'டைல்ஸ்';
+      case ConstructionMaterial.timber:
+        return 'மரம் & பிளைவுட்';
+      case ConstructionMaterial.debris:
+        return 'கட்டுமான கழிவு';
+    }
+  }
+
+  String localizedName(String langCode) {
+    return langCode.toLowerCase() == 'ta' ? cleanTamilTitle : cleanEnglishTitle;
+  }
 
   static ConstructionMaterial fromString(String? value) {
     switch (value?.toLowerCase()) {

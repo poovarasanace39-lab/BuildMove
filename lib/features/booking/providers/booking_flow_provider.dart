@@ -4,6 +4,7 @@ import '../../../models/enums.dart';
 import '../../../models/location_model.dart';
 import '../../../services/booking/booking_service_interface.dart';
 import '../../../services/booking/mock_booking_service.dart';
+import '../../../services/demo/demo_data_service.dart';
 
 final bookingServiceProvider = Provider<IBookingService>((ref) {
   return MockBookingService();
@@ -26,8 +27,8 @@ class BookingFlowState {
   final BookingModel? lastCreatedBooking;
 
   const BookingFlowState({
-    this.selectedMaterial = ConstructionMaterial.cement,
-    this.quantityTons = 5.0,
+    this.selectedMaterial = ConstructionMaterial.timber,
+    this.quantityTons = 5.5,
     this.loadUnit = 'tons',
     this.pickupLocation,
     this.dropLocation,
@@ -84,27 +85,14 @@ final bookingFlowProvider = NotifierProvider<BookingFlowNotifier, BookingFlowSta
 class BookingFlowNotifier extends Notifier<BookingFlowState> {
   @override
   BookingFlowState build() {
-    return const BookingFlowState(
-      selectedMaterial: ConstructionMaterial.cement,
-      quantityTons: 5.0,
+    final primary = DemoDataService.createPrimaryBooking();
+    return BookingFlowState(
+      selectedMaterial: primary.materialType,
+      quantityTons: primary.quantityTons,
       loadUnit: 'tons',
-      selectedVehicleType: VehicleType.tipper6Wheeler,
-      pickupLocation: LocationModel(
-        latitude: 13.0827,
-        longitude: 80.2707,
-        address: 'Dalmia Cement Depot, Ambattur',
-        siteLandmark: 'GPS Auto',
-        city: 'Chennai',
-        pincode: '600058',
-      ),
-      dropLocation: LocationModel(
-        latitude: 12.9716,
-        longitude: 80.2435,
-        address: 'Construction Site, OMR Thoraipakkam',
-        siteLandmark: 'Site Phase 2, OMR Navalur',
-        city: 'Chennai',
-        pincode: '600097',
-      ),
+      selectedVehicleType: primary.vehicleType,
+      pickupLocation: primary.pickupLocation,
+      dropLocation: primary.dropLocation,
     );
   }
 
@@ -142,7 +130,13 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
   }
 
   void selectVehicle(VehicleType type) {
-    state = state.copyWith(selectedVehicleType: type);
+    if (type.capacityTons < state.quantityTons) {
+      state = state.copyWith(
+        errorMessage: 'Vehicle capacity (${type.capacityTons}T) is insufficient for ${state.quantityTons}T load.',
+      );
+      return;
+    }
+    state = state.copyWith(selectedVehicleType: type, errorMessage: null);
   }
 
   Future<void> calculateEstimate() async {
@@ -185,6 +179,13 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         state.selectedVehicleType == null ||
         state.estimate == null) {
       state = state.copyWith(errorMessage: 'Please select vehicle and locations before confirming');
+      return null;
+    }
+
+    if (state.selectedVehicleType!.capacityTons < state.quantityTons) {
+      state = state.copyWith(
+        errorMessage: 'Selected vehicle capacity (${state.selectedVehicleType!.capacityTons}T) is insufficient for ${state.quantityTons}T load.',
+      );
       return null;
     }
 
